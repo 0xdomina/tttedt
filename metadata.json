@@ -1,0 +1,9 @@
+{
+  "name": "edQorta tw",
+  "description": "edQorta is a social marketplace designed to bring transparency, trust, and liquidity to the African real estate sector, starting with rentals in Nigeria.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera",
+    "microphone"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "edQorta",
+  "short_name": "edQorta",
+  "description": "edQorta is a social marketplace designed to bring transparency, trust, and liquidity to the African real estate sector, starting with rentals in Nigeria.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
