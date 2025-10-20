@@ -8,12 +8,24 @@ interface WelcomeScreenProps {
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onStartSignUp }) => {
   return (
     <div className="flex flex-col md:flex-row h-screen bg-white">
-      <div className="relative md:w-1/2 w-full h-1/3 md:h-full">
-        <img
-          src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=3474&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-          alt="Modern home interior"
+      <div className="relative md:w-1/2 w-full h-1/3 md:h-full overflow-hidden">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
           className="w-full h-full object-cover"
-        />
+          poster="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=3474&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        >
+          <source src="/videos/vid.mp4" type="video/mp4" />
+          <source src="/videos/vid.webm" type="video/webm" />
+          {/* Fallback for browsers that don't support video */}
+          <img
+            src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=3474&auto=format&fit=crop&ixlib-rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            alt="Modern home interior"
+            className="w-full h-full object-cover"
+          />
+        </video>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent md:bg-gradient-to-r md:from-black/60"></div>
       </div>
       
