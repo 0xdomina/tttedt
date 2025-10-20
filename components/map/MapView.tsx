@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Property, Neighborhood } from '../../types';
-import { MapPinIcon, ChatAltIcon } from '../Icons';
 import PropertyCard from '../property/PropertyCard';
 
 interface MapViewProps {
@@ -10,96 +14,86 @@ interface MapViewProps {
     onSelectNeighborhood: (id: number) => void;
 }
 
-const MAP_WIDTH = 1200;
-const MAP_HEIGHT = 800;
-const LAGOS_BOUNDS = {
-    minLat: 6.38,
-    maxLat: 6.70,
-    minLng: 3.00,
-    maxLng: 3.75,
-};
+const DEFAULT_CENTER: [number, number] = [6.5244, 3.3792]; // Lagos approx
+const DEFAULT_ZOOM = 12;
 
-const convertCoordsToPixels = (lat: number, lng: number) => {
-    const latRad = (lat - LAGOS_BOUNDS.minLat) / (LAGOS_BOUNDS.maxLat - LAGOS_BOUNDS.minLat);
-    const lngRad = (lng - LAGOS_BOUNDS.minLng) / (LAGOS_BOUNDS.maxLng - LAGOS_BOUNDS.minLng);
-    const x = lngRad * MAP_WIDTH;
-    const y = (1 - latRad) * MAP_HEIGHT;
-    return { x, y };
-};
+function FlyToWhenReady({ center }: { center: { lat: number; lng: number } | null }) {
+    const map = useMap();
+    useEffect(() => {
+        if (center) {
+            map.setView([center.lat, center.lng], Math.max(map.getZoom(), 13), { animate: true });
+        }
+    }, [center, map]);
+    return null;
+}
 
 const MapView: React.FC<MapViewProps> = ({ properties, neighborhoods, centerCoordinates, onSelectNeighborhood }) => {
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-    const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
 
+    // Ensure Leaflet's default icon URLs are set (avoids broken marker icons when bundlers move assets)
     useEffect(() => {
-        if (centerCoordinates) {
-            const propertyToSelect = properties.find(p => p.latitude === centerCoordinates.lat && p.longitude === centerCoordinates.lng);
-            if (propertyToSelect) {
-                setSelectedProperty(propertyToSelect);
-            }
-            const { x, y } = convertCoordsToPixels(centerCoordinates.lat, centerCoordinates.lng);
-            // This is a simplified centering logic. A real map would have complex viewport calculations.
-            setMapOffset({ x: -x + window.innerWidth / 2, y: -y + window.innerHeight / 2 });
-        }
-    }, [centerCoordinates, properties]);
+        delete (L.Icon.Default as any).prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: '/images/marker-icon-2x.png',
+            iconUrl: '/images/marker-icon.png',
+            shadowUrl: '/images/marker-shadow.png',
+        } as any);
+    }, []);
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-gray-200">
-            <div
-                className="absolute transition-transform duration-500 ease-in-out"
-                style={{
-                    width: `${MAP_WIDTH}px`,
-                    height: `${MAP_HEIGHT}px`,
-                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`
-                }}
-            >
-                <img 
-                    src="https://i.imgur.com/8O12A3G.png" 
-                    alt="Map of Lagos" 
-                    className="absolute top-0 left-0 w-full h-full object-cover"
+        <div className="w-full h-full relative">
+            <MapContainer center={centerCoordinates ? [centerCoordinates.lat, centerCoordinates.lng] : DEFAULT_CENTER} zoom={DEFAULT_ZOOM} className="w-full h-full rounded-xl">
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {properties.map(property => {
+
+                <FlyToWhenReady center={centerCoordinates} />
+
+                {properties.map((property) => {
                     if (!property.latitude || !property.longitude) return null;
-                    const { x, y } = convertCoordsToPixels(property.latitude, property.longitude);
-                    const isSelected = selectedProperty?.id === property.id;
-                    
                     return (
-                        <button
+                        <CircleMarker
                             key={property.id}
-                            onClick={() => setSelectedProperty(property)}
-                            style={{ left: `${x}px`, top: `${y}px`, transform: 'translate(-50%, -100%)' }}
-                            className="absolute z-10 transition-transform"
+                            center={[property.latitude, property.longitude]}
+                            radius={8}
+                            pathOptions={{ color: selectedProperty?.id === property.id ? '#7c3aed' : '#ef4444' }}
+                            eventHandlers={{
+                                click: () => setSelectedProperty(property),
+                            }}
                         >
-                            <MapPinIcon className={`w-8 h-8 drop-shadow-lg transition-all duration-200 ${isSelected ? 'text-violet-600 scale-125' : 'text-red-500'}`} />
-                        </button>
-                    )
-                })}
-                {neighborhoods.map(hub => {
-                    if (!hub.latitude || !hub.longitude) return null;
-                    const { x, y } = convertCoordsToPixels(hub.latitude, hub.longitude);
-                    return (
-                        <button
-                            key={`hub-${hub.id}`}
-                            onClick={() => onSelectNeighborhood(hub.id)}
-                            style={{ left: `${x}px`, top: `${y}px`, transform: 'translate(-50%, -50%)' }}
-                            className="absolute z-10 transition-transform group"
-                            aria-label={`Open ${hub.name} Hub`}
-                        >
-                            <div className="relative">
-                                <ChatAltIcon className="w-9 h-9 text-blue-600 drop-shadow-lg transition-transform group-hover:scale-110" />
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                                    {hub.questions.length}
+                            <Popup>
+                                <div className="w-64">
+                                    <PropertyCard property={property} showDirectionsButton={true} />
                                 </div>
-                            </div>
-                        </button>
+                            </Popup>
+                        </CircleMarker>
                     );
                 })}
-            </div>
-            
+
+                {neighborhoods.map((hub) => {
+                    if (!hub.latitude || !hub.longitude) return null;
+                    // Use a simple Marker for neighborhoods
+                    const icon = L.divIcon({
+                        className: 'bg-transparent',
+                        html: `<div class="flex items-center justify-center rounded-full bg-white p-1 shadow-md"><svg xmlns=\"http://www.w3.org/2000/svg\" class=\"w-6 h-6 text-blue-600\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M8 10h.01M12 10h.01M16 10h.01M9 16h6\"/></svg></div>`,
+                    });
+
+                    return (
+                        <Marker
+                            key={`hub-${hub.id}`}
+                            position={[hub.latitude, hub.longitude]}
+                            icon={icon}
+                            eventHandlers={{ click: () => onSelectNeighborhood(hub.id) }}
+                        />
+                    );
+                })}
+            </MapContainer>
+
             {selectedProperty && (
-                 <div className="absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-20 w-[90%] sm:w-80">
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-[90%] sm:w-96">
                     <PropertyCard property={selectedProperty} showDirectionsButton={true} />
-                 </div>
+                </div>
             )}
         </div>
     );
